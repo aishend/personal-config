@@ -17,3 +17,5 @@
 !Code/User/settings.json
 !kitty/
 !kitty/kitty.conf
+!fastfetch/
+!fastfetch/config.jsonc
