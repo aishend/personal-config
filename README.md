@@ -72,7 +72,7 @@ chmod +x ~/.config/hypr/scripts/*.sh ~/.config/waybar/scripts/*.sh
 All daemons run under systemd with `Restart=on-failure`. Enable them once:
 
 ```bash
-systemctl --user enable --now hyprpolkitagent hypridle hyprpaper waybar swaync
+systemctl --user enable --now hyprpolkitagent hypridle hyprpaper swaync
 ```
 
 ### 4 — Set your wallpaper
