@@ -15,3 +15,5 @@
 !Code/
 !Code/User/
 !Code/User/settings.json
+!kitty/
+!kitty/kitty.conf
