@@ -1,0 +1,137 @@
+/* =============================================================================
+   style.css — Waybar stylesheet
+   =============================================================================
+   Theme: Catppuccin Mocha
+   Font:  JetBrainsMono Nerd Font
+
+   Color reference:
+     crust    #11111b  |  surface0  #313244  |  surface1  #45475a
+     text     #cdd6f4  |  subtext1  #bac2de
+     blue     #89b4fa  |  mauve     #cba6f7
+     red      #f38ba8  |  peach     #fab387  |  green     #a6e3a1
+   ============================================================================= */
+
+/* -----------------------------------------------------------------------------
+   1. GLOBAL RESET
+   ----------------------------------------------------------------------------- */
+* {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size:   13px;
+    padding:     0 6px;
+    margin:      0;
+    border:      none;
+}
+
+/* -----------------------------------------------------------------------------
+   2. BAR
+   ----------------------------------------------------------------------------- */
+window#waybar {
+    background:    #11111b;            /* crust    */
+    color:         #cdd6f4;            /* text     */
+    border-bottom: 1px solid #313244;  /* surface0 */
+}
+
+/* -----------------------------------------------------------------------------
+   3. LEFT — Workspaces
+   ----------------------------------------------------------------------------- */
+#workspaces {
+    margin-right: 20px;
+}
+
+#workspaces button {
+    color: #45475a;  /* surface1 — inactive workspace */
+}
+
+#workspaces button.active {
+    color:         #89b4fa;             /* blue */
+    border-bottom: 2px solid #89b4fa;
+}
+
+/* -----------------------------------------------------------------------------
+   4. LEFT — Window title
+   ----------------------------------------------------------------------------- */
+#window {
+    color:       #89b4fa;  /* blue */
+    font-style:  italic;
+    margin-left: 20px;
+}
+
+/* -----------------------------------------------------------------------------
+   5. LEFT — Media player (MPRIS)
+   ----------------------------------------------------------------------------- */
+#mpris {
+    color:       #cba6f7;  /* mauve */
+    font-weight: bold;
+    margin-left: 30px;
+}
+
+/* -----------------------------------------------------------------------------
+   6. CENTER — Clock
+   ----------------------------------------------------------------------------- */
+#clock {
+    color:       white;
+    font-weight: bold;
+}
+
+/* -----------------------------------------------------------------------------
+   7. RIGHT — Shared spacing
+   ----------------------------------------------------------------------------- */
+#power-profiles-daemon,
+#pulseaudio,
+#bluetooth,
+#network,
+#battery,
+#custom-notification {
+    margin-left:  14px;
+    margin-right: 14px;
+}
+
+/* -----------------------------------------------------------------------------
+   8. RIGHT — Static colors (audio, bluetooth, network, battery)
+   ----------------------------------------------------------------------------- */
+#pulseaudio,
+#bluetooth,
+#network,
+#battery {
+    color: #bac2de;  /* subtext1 */
+}
+
+/* -----------------------------------------------------------------------------
+   9. RIGHT — Power profile
+   ----------------------------------------------------------------------------- */
+#power-profiles-daemon.performance {
+    color: #f38ba8;  /* red   — high consumption */
+}
+
+#power-profiles-daemon.balanced {
+    color: #89b4fa;  /* blue  */
+}
+
+#power-profiles-daemon.power-saver {
+    color: #a6e3a1;  /* green — low consumption */
+}
+
+/* -----------------------------------------------------------------------------
+   9. RIGHT — Battery states
+   ----------------------------------------------------------------------------- */
+#battery.charging,
+#battery.plugged {
+    color: #a6e3a1;  /* green */
+}
+
+#battery.discharging {
+    color: #fab387;  /* peach */
+}
+
+#battery.critical {
+    color: #f38ba8;  /* red */
+}
+
+/* -----------------------------------------------------------------------------
+   10. RIGHT — Notification bell
+   ----------------------------------------------------------------------------- */
+#custom-notification {
+    color:        #fab387;  /* peach */
+    font-size:    14px;
+    margin-right: 12px;
+}
