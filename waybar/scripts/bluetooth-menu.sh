@@ -32,7 +32,7 @@ fi
 
 # ── Controller off ────────────────────────────────────────────────────────────
 if ! bluetoothctl show | grep -q "Powered: yes"; then
-    choice=$(printf "  Enable Bluetooth\n󰀀  Cancel" | rofi_menu "  Bluetooth Off")
+    choice=$(printf "  Enable Bluetooth\n  Cancel" | rofi_menu "  Bluetooth Off")
     if [[ "$choice" == *"Enable"* ]]; then
         bluetoothctl power on
         sleep 1
