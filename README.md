@@ -19,7 +19,7 @@ Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested
 | Notifications | Swaync |
 | Polkit agent | Hyprpolkitagent |
 | Audio | Pipewire + WirePlumber + Pavucontrol |
-| Bluetooth | Blueman |
+| Bluetooth | bluetoothctl (via rofi menu) |
 | System monitor | Btop |
 | Font | JetBrainsMono Nerd Font |
 | Editor | VS Code (Ayu Dark Bordered) |
@@ -31,7 +31,7 @@ Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested
 > Arch Linux (or Arch-based). Run as your normal user, not root.
 
 ```bash
-sudo pacman -S --needed hyprland uwsm waybar kitty nautilus rofi grim slurp hyprpaper hypridle hyprlock swaync hyprpolkitagent xdg-desktop-portal-hyprland xdg-desktop-portal-gtk pipewire-alsa pipewire-pulse wireplumber power-profiles-daemon blueman wl-clipboard jq playerctl brightnessctl networkmanager qt5ct ttf-jetbrains-mono-nerd && git clone https://github.com/aishend/hyprland-configs.git /tmp/hyprland-configs && cp -r /tmp/hyprland-configs/* ~/.config/ && chmod +x ~/.config/hypr/scripts/*.sh ~/.config/waybar/scripts/*.sh && systemctl --user enable --now hyprpolkitagent hypridle hyprpaper waybar swaync
+sudo pacman -S --needed hyprland uwsm waybar kitty nautilus rofi grim slurp hyprpaper hypridle hyprlock swaync hyprpolkitagent xdg-desktop-portal-hyprland xdg-desktop-portal-gtk pipewire-alsa pipewire-pulse wireplumber power-profiles-daemon wl-clipboard jq playerctl brightnessctl networkmanager qt5ct ttf-jetbrains-mono-nerd && git clone https://github.com/aishend/hyprland-configs.git /tmp/hyprland-configs && cp -r /tmp/hyprland-configs/* ~/.config/ && chmod +x ~/.config/hypr/scripts/*.sh ~/.config/waybar/scripts/*.sh && systemctl --user enable --now hyprpolkitagent hypridle hyprpaper waybar swaync
 ```
 
 Then log out and select **Hyprland** from your display manager.
@@ -50,13 +50,13 @@ sudo pacman -S --needed hyprland uwsm waybar kitty nautilus rofi grim slurp \
     xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
     pipewire-alsa pipewire-pulse wireplumber \
     power-profiles-daemon wl-clipboard jq playerctl brightnessctl \
-    networkmanager qt5ct ttf-jetbrains-mono-nerd
+    networkmanager qt5ct ttf-jetbrains-mono-nerd bluez bluez-utils
 ```
 
 **Optional** — useful extras, install what you need:
 
 ```bash
-sudo pacman -S --needed blueman pavucontrol btop fastfetch
+sudo pacman -S --needed pavucontrol btop fastfetch
 ```
 
 ### 2 — Deploy config
@@ -191,6 +191,43 @@ cursor = { no_hardware_cursors = true },
 │       └── wifi-menu.sh          # Wi-Fi network menu (rofi + nmcli)
 └── README.md
 ```
+
+---
+
+## Waybar menus
+
+All three system menus in the bar are pure Rofi scripts — no daemon, no tray process. They spawn only when clicked and exit immediately after the action.
+
+### Wi-Fi (`waybar/scripts/wifi-menu.sh`)
+
+Click the network indicator in the bar to open a menu showing all visible networks with signal-strength icons (󰤨 󰤥 󰤢 󰤟). The currently connected network is marked with ✓.
+
+| Entry | Action |
+|-------|--------|
+| Network marked ✓ | Disconnect from it |
+| Any other network | Connect (opens Kitty with `nmcli --ask` if a password is required) |
+| Rescan Networks | Trigger a hardware scan and reopen the menu after 3 s |
+| Turn Off Wi-Fi | Disable the radio via `nmcli radio wifi off` |
+| Manage Connections | Open `nm-connection-editor` |
+
+When the radio is already off, clicking the bar button shows only "Enable Wi-Fi" and reopens the full menu once the radio comes up.
+
+### Bluetooth (`waybar/scripts/bluetooth-menu.sh`)
+
+Click the Bluetooth indicator to open a menu listing all paired devices. Connected devices show a filled icon (󰂱) and battery percentage when the device reports it.
+
+| Entry | Action |
+|-------|--------|
+| Connected device | Disconnect from it |
+| Paired device | Connect to it |
+| Scan for New Devices (10 s) | Run `bluetoothctl scan on` for 10 seconds, then reopen the menu |
+| Turn Off Bluetooth | Power down the controller |
+
+When the controller is off, clicking the bar button shows only "Enable Bluetooth" and reopens the full menu once it powers on.
+
+### Audio output (`waybar/scripts/audio-menu.sh`)
+
+Left-click the volume indicator to open a sink picker. The active sink is marked with ●. Selecting a different sink switches it immediately and moves all active audio streams to it — no need to restart applications.
 
 ---
 

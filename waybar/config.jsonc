@@ -106,25 +106,31 @@
         "tooltip-format": "{desc} | {volume}%"
     },
 
-    // Bluetooth — click opens blueman-manager
+    // Bluetooth — left-click opens rofi bluetooth menu; format-disabled stays visible when the radio is off
     "bluetooth": {
         "format":               " Bluetooth",
         "format-connected":     " {device_alias}",
-        "format-disabled":      "",
+        "format-connected-battery": " {device_alias} {device_battery_percentage}%",
+        "format-disabled":      " Off",
         "format-no-controller": "",
-        "max-length":           20,
+        "max-length":           24,
         "on-click":             "~/.config/waybar/scripts/bluetooth-menu.sh",
         "tooltip":              true,
-        "tooltip-format":       "{status}"
+        "tooltip-format":       "{status}\n{num_connections} device(s) connected"
     },
 
-    // Network — click opens networkmanager_dmenu
+    // Network — left-click opens rofi wi-fi menu
+    // interval: 5 keeps the icon in sync after toggling the radio
     "network": {
+        "interval":            5,
         "format-wifi":         "󰤨  {essid}",
         "format-ethernet":     "󰈀  Wired",
-        "format-disconnected": "󰤮  Disconnected",
-        "max-length":          20,
-        "on-click":            "~/.config/waybar/scripts/wifi-menu.sh"
+        "format-linked":       "󰤭  No IP",
+        "format-disconnected": "󰤭  Disconnected",
+        "max-length":          24,
+        "on-click":            "~/.config/waybar/scripts/wifi-menu.sh",
+        "tooltip":             true,
+        "tooltip-format":      "{ifname}: {ipaddr}\nSignal: {signaldBm} dBm"
     },
 
     // Battery with per-level discharge icons
