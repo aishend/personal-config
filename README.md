@@ -1,6 +1,6 @@
 # hyprland-configs
 
-Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested on an Acer Predator Neo 16 with Nvidia (dGPU only) and a dual-monitor setup.
+Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested on an Acer Predator Neo 16 with Nvidia + Intel hybrid graphics and a dual-monitor setup.
 
 ---
 
@@ -23,18 +23,6 @@ Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested
 | System monitor | Btop |
 | Font | JetBrainsMono Nerd Font |
 | Editor | VS Code (Ayu Dark Bordered) |
-
----
-
-## Fresh install
-
-> Arch Linux (or Arch-based). Run as your normal user, not root.
-
-```bash
-sudo pacman -S --needed hyprland uwsm waybar kitty nautilus rofi grim slurp hyprpaper hypridle hyprlock swaync hyprpolkitagent xdg-desktop-portal-hyprland xdg-desktop-portal-gtk pipewire-alsa pipewire-pulse wireplumber power-profiles-daemon wl-clipboard jq playerctl brightnessctl networkmanager qt5ct ttf-jetbrains-mono-nerd && git clone https://github.com/aishend/hyprland-configs.git /tmp/hyprland-configs && cp -r /tmp/hyprland-configs/* ~/.config/ && chmod +x ~/.config/hypr/scripts/*.sh ~/.config/waybar/scripts/*.sh && systemctl --user enable --now hyprpolkitagent hypridle hyprpaper waybar swaync
-```
-
-Then log out and select **Hyprland** from your display manager.
 
 ---
 
@@ -69,11 +57,13 @@ chmod +x ~/.config/hypr/scripts/*.sh ~/.config/waybar/scripts/*.sh
 
 ### 3 — Enable systemd services
 
-All daemons run under systemd with `Restart=on-failure`. Enable them once:
+These daemons run under systemd with `Restart=on-failure`. Enable them once:
 
 ```bash
 systemctl --user enable --now hyprpolkitagent hypridle hyprpaper swaync
 ```
+
+> **Waybar** is not managed by systemd — it runs inside a watchdog loop in `autostart.lua` (`while true; do waybar; done`) so it restarts automatically after DPMS events, which cause a clean exit that `Restart=on-failure` would miss.
 
 ### 4 — Set your wallpaper
 
@@ -134,6 +124,19 @@ hl.config({
 })
 ```
 
+### Wacom tablet
+
+`input.lua` binds a Wacom Intuos BT M pen to the laptop panel by device name:
+
+```lua
+hl.device({
+    name   = "wacom-intuos-bt-m-pen",
+    output = "eDP-1",
+})
+```
+
+If you don't have a Wacom tablet, remove that `hl.device()` block entirely. To bind a different tablet, run `hyprctl devices` to find its exact name, then replace the `name` field.
+
 ### Nvidia GPU
 
 If you are on AMD or Intel only, remove the Nvidia env vars from `hypr/hyprland.lua`:
@@ -162,7 +165,7 @@ cursor = { no_hardware_cursors = true },
 │   ├── conf/
 │   │   ├── monitors.lua          # Monitor layout — edit for your hardware
 │   │   ├── autostart.lua         # D-Bus env, dark mode, wallpaper, Firefox
-│   │   ├── input.lua             # Input, cursor, touchpad, XWayland
+│   │   ├── input.lua             # Input, cursor, touchpad, XWayland, Wacom tablet
 │   │   ├── animations.lua        # Animations and bezier curves
 │   │   ├── decorations.lua       # Borders, rounded corners, shadow, blur
 │   │   ├── keybindings.lua       # All keybindings
