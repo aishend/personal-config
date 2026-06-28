@@ -1,6 +1,6 @@
 # hyprland-configs
 
-Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested on an Acer Predator Neo 16 with Nvidia + Intel hybrid graphics and a dual-monitor setup.
+Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.46+). Tested on an Acer Predator Neo 16 with Nvidia + Intel hybrid graphics and a dual-monitor setup.
 
 ---
 
@@ -8,7 +8,7 @@ Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested
 
 | Role | Tool |
 |------|------|
-| Window manager | [Hyprland](https://hyprland.org) v0.55+ |
+| Window manager | [Hyprland](https://hyprland.org) v0.46+ |
 | Status bar | [Waybar](https://github.com/Alexays/Waybar) |
 | Terminal | [Kitty](https://sw.kovidgoyal.net/kitty/) |
 | File manager | Nautilus |
@@ -19,14 +19,14 @@ Personal Hyprland dotfiles written in **Lua** (requires Hyprland v0.55+). Tested
 | Notifications | Swaync |
 | Polkit agent | Hyprpolkitagent |
 | Audio | Pipewire + WirePlumber + Pavucontrol |
-| Bluetooth | bluetoothctl (via rofi menu) |
+| Bluetooth | bluetoothctl (via Rofi menu) |
 | System monitor | Btop |
 | Font | JetBrainsMono Nerd Font |
 | Editor | VS Code (Ayu Dark Bordered) |
 
 ---
 
-## Step by step
+## Setup
 
 ### 1 — Install packages
 
@@ -38,10 +38,10 @@ sudo pacman -S --needed hyprland uwsm waybar kitty nautilus rofi grim slurp \
     xdg-desktop-portal-hyprland xdg-desktop-portal-gtk \
     pipewire-alsa pipewire-pulse wireplumber \
     power-profiles-daemon wl-clipboard jq playerctl brightnessctl \
-    networkmanager qt5ct ttf-jetbrains-mono-nerd bluez bluez-utils
+    networkmanager ttf-jetbrains-mono-nerd bluez bluez-utils
 ```
 
-**Optional** — useful extras, install what you need:
+**Optional** — useful extras:
 
 ```bash
 sudo pacman -S --needed pavucontrol btop fastfetch
@@ -55,9 +55,7 @@ cp -r hyprland-configs/* ~/.config/
 chmod +x ~/.config/hypr/scripts/*.sh ~/.config/waybar/scripts/*.sh
 ```
 
-### 3 — Enable systemd services
-
-These daemons run under systemd with `Restart=on-failure`. Enable them once:
+### 3 — Enable user services
 
 ```bash
 systemctl --user enable --now hyprpolkitagent hypridle hyprpaper swaync
@@ -72,11 +70,9 @@ Place your wallpaper at `~/.config/hypr/wallpapers/gradient.jpg`, or edit the pa
 - `hypr/hyprpaper.conf` — preload and initial assignment
 - `hypr/conf/autostart.lua` — the `hyprctl hyprpaper wallpaper` line
 
-> **Wallpaper not appearing?** The `sleep 1` in `autostart.lua` waits for the compositor socket before setting the wallpaper. On slower machines it may need more time — increase it to `sleep 2` or `sleep 3`.
+> **Wallpaper not appearing?** The `sleep 1` in `autostart.lua` waits for the compositor socket. On slower machines increase it to `sleep 2` or `sleep 3`.
 
 ### 5 — VS Code theme
-
-Install the Ayu extension:
 
 ```bash
 code --install-extension teabyii.ayu
@@ -90,11 +86,104 @@ Log out and select **Hyprland** from your display manager.
 
 ---
 
+## Nvidia setup
+
+These steps are required for Wayland compatibility and stable suspend/resume with proprietary Nvidia drivers. Apply them once on a fresh install — they are OS-level and not part of the dotfiles.
+
+### Kernel parameters
+
+Add the following to `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`, then run `sudo grub-mkconfig -o /boot/grub/grub.cfg`:
+
+| Parameter | Why |
+|-----------|-----|
+| `nvidia_drm.modeset=1` | Enables KMS — required for Wayland. Without it the compositor cannot manage the display, causing flickering, missing hardware acceleration, or a failed session start. |
+| `nvidia_drm.fbdev=1` | Enables the Nvidia framebuffer device for early KMS output before userspace starts. |
+| `nvidia.NVreg_PreserveVideoMemoryAllocations=1` | Preserves VRAM contents during suspend. Without it the GPU clears its memory on suspend and the OS cannot restore it on wake, causing a hard freeze or black screen. |
+
+### Early module loading
+
+Add the Nvidia modules to `MODULES` in `/etc/mkinitcpio.conf` so drivers are loaded before the compositor starts:
+
+```
+MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)
+```
+
+Then regenerate the initramfs:
+
+```bash
+sudo mkinitcpio -P
+```
+
+### Power management services
+
+```bash
+sudo systemctl enable nvidia-suspend.service
+sudo systemctl enable nvidia-hibernate.service
+sudo systemctl enable nvidia-resume.service
+sudo systemctl enable nvidia-powerd.service
+```
+
+### Environment variables
+
+Set in `hypr/hyprland.lua`. Required for Wayland, VA-API, and rendering to work correctly with the proprietary driver:
+
+| Variable | Value | Why |
+|----------|-------|-----|
+| `LIBVA_DRIVER_NAME` | `nvidia` | Forces VA-API (hardware video acceleration) to use the Nvidia driver instead of Mesa. |
+| `XDG_SESSION_TYPE` | `wayland` | Ensures applications detect the session as native Wayland. |
+| `GBM_BACKEND` | `nvidia-drm` | Sets the GBM backend to nvidia-drm, required for EGL on Wayland. |
+| `__GLX_VENDOR_LIBRARY_NAME` | `nvidia` | Forces GLX to load the Nvidia library instead of the generic GLVND, avoiding conflicts with Mesa. |
+| `NVD_BACKEND` | `direct` | Uses direct rendering in the Nvidia video backend (nvdec), improving performance and compatibility. |
+
+> **Not on Nvidia?** Remove all the variables above from `hyprland.lua` and remove `cursor = { no_hardware_cursors = true }` from `input.lua`.
+
+---
+
+## System-level configuration
+
+Other OS-level steps for this hardware. Skip anything that does not apply to your machine.
+
+### Blacklist `acer_wmi`
+
+The `acer_wmi` kernel module conflicts with this hardware. Create `/etc/modprobe.d/blacklist-acer_wmi.conf`:
+
+```
+blacklist acer_wmi
+```
+
+### Nekro Sense (RGB / fan control)
+
+Load the `nekro_sense` kernel module at boot. Create `/etc/modules-load.d/nekro_sense.conf`:
+
+```
+nekro_sense
+```
+
+Then enable the service:
+
+```bash
+sudo systemctl enable nekro_sense.service
+```
+
+### Other services
+
+```bash
+sudo systemctl enable ufw.service && sudo ufw enable   # firewall
+sudo systemctl enable nordvpnd.service                  # NordVPN
+sudo systemctl enable intel_lpmd.service                # Intel Low Power Mode Daemon
+sudo systemctl enable ananicy-cpp.service               # CPU scheduler
+sudo systemctl enable fstrim.timer                      # SSD TRIM
+sudo systemctl enable snapper-cleanup.timer             # Btrfs snapshot cleanup
+sudo systemctl enable grub-btrfs-snapper.path           # GRUB Btrfs snapshot entries
+```
+
+---
+
 ## Hardware adaptation
 
 ### Monitors
 
-Find your output names with `hyprctl monitors` or `wlr-randr`, then edit `hypr/conf/monitors.lua`:
+Find your output names with `hyprctl monitors`, then edit `hypr/conf/monitors.lua`:
 
 ```lua
 hl.monitor({ output = "DP-1",  mode = "1920x1080@100", position = "0x0",    scale = 1    })
@@ -102,7 +191,7 @@ hl.monitor({ output = "DP-2",  mode = "1920x1080@100", position = "0x0",    scal
 hl.monitor({ output = "eDP-1", mode = "2560x1600@165", position = "0x1080", scale = 1.25 })
 ```
 
-For a single monitor keep one line. Remove or adjust `position` so monitors don't overlap.
+For a single monitor keep one line and remove the `position` offset.
 
 ### Workspaces
 
@@ -113,7 +202,7 @@ for i = 1, 5  do hl.workspace_rule({ workspace = tostring(i), monitor = "eDP-1" 
 for i = 6, 10 do hl.workspace_rule({ workspace = tostring(i), monitor = "DP-1"  }) end
 ```
 
-For a single monitor, remove both loops and use a single one for 1–10.
+For a single monitor, replace both loops with a single `for i = 1, 10` loop.
 
 ### Keyboard layout
 
@@ -135,24 +224,7 @@ hl.device({
 })
 ```
 
-If you don't have a Wacom tablet, remove that `hl.device()` block entirely. To bind a different tablet, run `hyprctl devices` to find its exact name, then replace the `name` field.
-
-### Nvidia GPU
-
-If you are on AMD or Intel only, remove the Nvidia env vars from `hypr/hyprland.lua`:
-
-```lua
-hl.env("LIBVA_DRIVER_NAME",         "nvidia")
-hl.env("GBM_BACKEND",               "nvidia-drm")
-hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
-hl.env("NVD_BACKEND",               "direct")
-```
-
-And remove this block from `hl.config()` in `hypr/conf/input.lua`:
-
-```lua
-cursor = { no_hardware_cursors = true },
-```
+Remove the `hl.device()` block if you don't have a Wacom tablet. To use a different tablet, run `hyprctl devices` to find its exact name and replace the `name` field.
 
 ---
 
@@ -164,12 +236,12 @@ cursor = { no_hardware_cursors = true },
 │   ├── hyprland.lua              # Entry point: env vars, loads conf/*.lua
 │   ├── conf/
 │   │   ├── monitors.lua          # Monitor layout — edit for your hardware
-│   │   ├── autostart.lua         # D-Bus env, dark mode, wallpaper, Firefox
+│   │   ├── autostart.lua         # D-Bus env, dark mode, wallpaper, autostart apps
 │   │   ├── input.lua             # Input, cursor, touchpad, XWayland, Wacom tablet
 │   │   ├── animations.lua        # Animations and bezier curves
 │   │   ├── decorations.lua       # Borders, rounded corners, shadow, blur
 │   │   ├── keybindings.lua       # All keybindings
-│   │   └── workspaces.lua        # Workspace rules + workspace keybindings
+│   │   └── workspaces.lua        # Workspace rules and keybindings
 │   ├── hyprpaper.conf            # Wallpaper preload and assignment
 │   ├── hypridle.conf             # Idle timeouts and lock triggers
 │   ├── hyprlock.conf             # Lock screen appearance
@@ -199,38 +271,38 @@ cursor = { no_hardware_cursors = true },
 
 ## Waybar menus
 
-All three system menus in the bar are pure Rofi scripts — no daemon, no tray process. They spawn only when clicked and exit immediately after the action.
+All three system menus are pure Rofi scripts — no daemon, no tray process. They spawn on click and exit after the action.
 
 ### Wi-Fi (`waybar/scripts/wifi-menu.sh`)
 
-Click the network indicator in the bar to open a menu showing all visible networks with signal-strength icons (󰤨 󰤥 󰤢 󰤟). The currently connected network is marked with ✓.
+Click the network indicator to open a menu showing visible networks with signal-strength icons. The connected network is marked with ✓.
 
 | Entry | Action |
 |-------|--------|
-| Network marked ✓ | Disconnect from it |
-| Any other network | Connect (opens Kitty with `nmcli --ask` if a password is required) |
-| Rescan Networks | Trigger a hardware scan and reopen the menu after 3 s |
+| Network marked ✓ | Disconnect |
+| Any other network | Connect (opens Kitty with `nmcli --ask` if a password is needed) |
+| Rescan Networks | Trigger a hardware scan and reopen after 3 s |
 | Turn Off Wi-Fi | Disable the radio via `nmcli radio wifi off` |
 | Manage Connections | Open `nm-connection-editor` |
 
-When the radio is already off, clicking the bar button shows only "Enable Wi-Fi" and reopens the full menu once the radio comes up.
+When the radio is off, the button shows only "Enable Wi-Fi" and reopens the full menu once the radio comes up.
 
 ### Bluetooth (`waybar/scripts/bluetooth-menu.sh`)
 
-Click the Bluetooth indicator to open a menu listing all paired devices. Connected devices show a filled icon (󰂱) and battery percentage when the device reports it.
+Click the Bluetooth indicator to list all paired devices. Connected devices show a filled icon (󰂱) and battery percentage when available.
 
 | Entry | Action |
 |-------|--------|
-| Connected device | Disconnect from it |
-| Paired device | Connect to it |
-| Scan for New Devices (10 s) | Run `bluetoothctl scan on` for 10 seconds, then reopen the menu |
+| Connected device | Disconnect |
+| Paired device | Connect |
+| Scan for New Devices (10 s) | Run `bluetoothctl scan on` for 10 s, then reopen |
 | Turn Off Bluetooth | Power down the controller |
 
-When the controller is off, clicking the bar button shows only "Enable Bluetooth" and reopens the full menu once it powers on.
+When the controller is off, the button shows only "Enable Bluetooth" and reopens once it powers on.
 
 ### Audio output (`waybar/scripts/audio-menu.sh`)
 
-Left-click the volume indicator to open a sink picker. The active sink is marked with ●. Selecting a different sink switches it immediately and moves all active audio streams to it — no need to restart applications.
+Left-click the volume indicator to open a sink picker. The active sink is marked with ●. Selecting a different sink switches it immediately and moves all active streams to it.
 
 ---
 
@@ -254,9 +326,9 @@ Arrow keys and Vim keys (`h/j/k/l`) are equivalent. Left/right switch workspace 
 
 | Shortcut | Action |
 |----------|--------|
-| `Super + ←/→` or `Super + H/L` | Move focus (switches workspace at edge) |
+| `Super + ←/→` or `Super + H/L` | Move focus left / right (switches workspace at edge) |
 | `Super + ↑/↓` or `Super + K/J` | Move focus up / down |
-| `Super + Shift + ←/→` or `Super + Shift + H/L` | Move window (sends to next workspace at edge) |
+| `Super + Shift + ←/→` or `Super + Shift + H/L` | Move window left / right (sends to next workspace at edge) |
 | `Super + Shift + ↑/↓` or `Super + Shift + K/J` | Move window up / down |
 
 ### Workspaces

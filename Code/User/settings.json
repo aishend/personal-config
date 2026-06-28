@@ -2,5 +2,12 @@
     "files.autoSave": "afterDelay",
     "claudeCode.preferredLocation": "panel",
     "explorer.confirmDelete": false,
-    "workbench.colorTheme": "Ayu Dark Bordered"
+    "workbench.colorTheme": "Ayu Dark Bordered",
+    "explorer.confirmPasteNative": false,
+    "github.copilot.enable": {
+        "*": false,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    }
 }
